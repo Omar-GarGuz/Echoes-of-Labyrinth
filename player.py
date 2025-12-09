@@ -144,16 +144,35 @@ class Player:
     def check_vertical_collisions(self):
         self.on_ground = False
         landed_on_platform = None
+        
+        # Store previous bottom position for one-way platform check
+        prev_bottom = self.rect.bottom - self.vel.y
 
         for tile in self.game.level.get_colliding_tiles(self):
+            # Check if it's a one-way platform
+            is_one_way = hasattr(tile, 'one_way') and tile.one_way
+            
             if self.vel.y > 0:  # landing
-                self.pos.y = tile.rect.top - self.size.y
-                self.vel.y = 0
-                self.on_ground = True
-                self.jumping = False
-                if hasattr(tile, "is_moving_platform") and tile.is_moving_platform:
-                    landed_on_platform = tile
-            elif self.vel.y < 0:  # ceiling
+                # For one-way platforms, only collide if coming from above
+                if is_one_way:
+                    if prev_bottom <= tile.rect.top + 5:  # Add small tolerance
+                        self.pos.y = tile.rect.top - self.size.y
+                        self.vel.y = 0
+                        self.on_ground = True
+                        self.jumping = False
+                        if hasattr(tile, "is_moving_platform") and tile.is_moving_platform:
+                            landed_on_platform = tile
+                else:
+                    # Solid platform - always collide when landing
+                    # Only snap if we're close to the top (prevents teleporting from inside)
+                    if self.rect.bottom <= tile.rect.top + abs(self.vel.y) + 5:
+                        self.pos.y = tile.rect.top - self.size.y
+                        self.vel.y = 0
+                        self.on_ground = True
+                        self.jumping = False
+                        if hasattr(tile, "is_moving_platform") and tile.is_moving_platform:
+                            landed_on_platform = tile
+            elif self.vel.y < 0 and not is_one_way:  # ceiling (ignore for one-way)
                 self.pos.y = tile.rect.bottom
                 self.vel.y = 0
 
@@ -161,12 +180,12 @@ class Player:
         if landed_on_platform:
             dx, dy = landed_on_platform.delta
             self.pos.x += dx
-            self.pos.y += dy  # optional; safe because we snapped to top already
+            self.pos.y += dy
             self.on_moving_platform = landed_on_platform
         else:
             self.on_moving_platform = None
 
-        self.rect.y = self.pos.y  # keep in sync
+        self.rect.y = int(self.pos.y)  # Add int() cast
                 
     def update_memories(self):
         # Check if any memories need to fade

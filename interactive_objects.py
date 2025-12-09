@@ -14,7 +14,7 @@ class Door(pygame.sprite.Sprite):
         # Animation properties
         self.opening = False
         self.opening_time = 0
-        self.open_duration = 500  # milliseconds
+        self.open_duration = 1000  # milliseconds
         
         # Load images
         self.closed_img = pygame.image.load("assets/objects/door_closed.png")
@@ -114,13 +114,13 @@ class MovingPlatform(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, move_x, move_y, speed, platform_id):
         super().__init__()
         self.id = platform_id
-        self.rect = pygame.Rect(x, y, width, height)
+        self.rect = pygame.Rect(int(x), int(y), int(width), int(height))
         self.start_pos = pygame.math.Vector2(x, y)
         self.move_distance = pygame.math.Vector2(move_x, move_y)
         self.speed = speed
-        self.progress = 0
+        self.progress = 0.0
         self.forward = True
-        self.active = False  # set true via lever/switch or JSON
+        self.active = False
         self.is_moving_platform = True
         self.prev_rect = self.rect.copy()
         self.delta = (0, 0)
@@ -132,27 +132,23 @@ class MovingPlatform(pygame.sprite.Sprite):
     def update(self):
         self.prev_rect = self.rect.copy()
         if self.active:
-            # Update platform position
             if self.forward:
                 self.progress += self.speed
-                if self.progress >= 1:
-                    self.progress = 1
+                if self.progress >= 1.0:
+                    self.progress = 1.0
                     self.forward = False
             else:
                 self.progress -= self.speed
-                if self.progress <= 0:
-                    self.progress = 0
+                if self.progress <= 0.0:
+                    self.progress = 0.0
                     self.forward = True
                     
-            # Calculate current position
-            current_x = self.start_pos.x + self.move_distance.x * self.progress
-            current_y = self.start_pos.y + self.move_distance.y * self.progress
+            current_x = int(self.start_pos.x + self.move_distance.x * self.progress)
+            current_y = int(self.start_pos.y + self.move_distance.y * self.progress)
             
-            # Update rect position
             self.rect.x = current_x
             self.rect.y = current_y
 
-        # movement delta this frame
         self.delta = (self.rect.x - self.prev_rect.x, self.rect.y - self.prev_rect.y)
     
     def draw(self, screen, offset):

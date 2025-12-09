@@ -141,6 +141,7 @@ class Level:
                 platform_data["speed"],
                 platform_data["id"]
             )
+            platform.active = platform_data.get("active", False)  # allow starting active flag
             self.platforms.add(platform)
             
         # Update current room

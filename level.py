@@ -187,14 +187,23 @@ class Level:
                     player.rect.x = player.pos.x
                     player.rect.y = player.pos.y
                     break
-        
+
         # Update camera to follow player
         target_x = WIDTH / 2 - player.rect.centerx
         target_y = HEIGHT / 2 - player.rect.centery
         
-        # Smooth camera
+        # After computing target_x/target_y:
+        level_width = max(t.rect.right for t in self.tiles) if self.tiles else WIDTH
+        level_height = max(t.rect.bottom for t in self.tiles) if self.tiles else HEIGHT
+
         self.camera_offset.x += (target_x - self.camera_offset.x) * 0.1
         self.camera_offset.y += (target_y - self.camera_offset.y) * 0.1
+
+        # Clamp so we don't show beyond level bounds
+        min_x = min(0, WIDTH - level_width)
+        min_y = min(0, HEIGHT - level_height)
+        self.camera_offset.x = max(min_x, min(0, self.camera_offset.x))
+        self.camera_offset.y = max(min_y, min(0, self.camera_offset.y))
     
     def draw(self, screen):
         # Draw background

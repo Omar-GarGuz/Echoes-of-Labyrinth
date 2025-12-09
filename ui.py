@@ -49,6 +49,7 @@ class UI:
                 if memory.is_fading:
                     fade_progress = (pygame.time.get_ticks() - memory.fade_start_time) / 2000  # 2 second fade
                     fade_alpha = int(255 * (1 - fade_progress))
+                    fade_alpha = max(0, min(255, fade_alpha))  # clamp
                     
                     fade_surf = pygame.Surface((memory_display_width, memory_display_height), pygame.SRCALPHA)
                     fade_surf.fill((255, 255, 255, fade_alpha))

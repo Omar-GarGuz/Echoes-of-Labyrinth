@@ -16,6 +16,7 @@ class Player:
         self.jumping = False
         self.on_ground = False
         self.interacting = False
+        self.on_moving_platform = None
         
         # Animation properties
         self.current_sprite = 0
@@ -91,9 +92,8 @@ class Player:
         return sprite
     
     def update(self):
-        # Update player position based on velocity
         keys = pygame.key.get_pressed()
-        
+
         # Horizontal movement
         self.vel.x = 0
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -108,55 +108,65 @@ class Player:
                 self.state = "walk"
         elif self.on_ground:
             self.state = "idle"
-        
+
         # Apply gravity
         self.vel.y += PLAYER_GRAVITY
-        
-        # Update position
+
+       # --- horizontal step ---
         self.pos.x += self.vel.x
+        self.rect.x = self.pos.x  # sync before collision
         self.check_horizontal_collisions()
-        
+
+        # --- vertical step ---
         self.pos.y += self.vel.y
+        self.rect.y = self.pos.y  # sync before collision
         self.check_vertical_collisions()
-        
-        # Update rect
+
+        # Final rect sync
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
-        
+
         # Update animation states
         if not self.on_ground:
-            if self.vel.y < 0:
-                self.state = "jump"
-            else:
-                self.state = "fall"
-        
+            self.state = "jump" if self.vel.y < 0 else "fall"
+
         # Update memory timers
         self.update_memories()
-        
+
     def check_horizontal_collisions(self):
-        # Check for collisions with tiles
         for tile in self.game.level.get_colliding_tiles(self):
-            # Left collision
             if self.vel.x > 0:
                 self.pos.x = tile.rect.left - self.size.x
-            # Right collision
             elif self.vel.x < 0:
                 self.pos.x = tile.rect.right
-                
+        self.rect.x = self.pos.x  # keep in sync
+
     def check_vertical_collisions(self):
-        # Check for collisions with tiles
         self.on_ground = False
+        landed_on_platform = None
+
         for tile in self.game.level.get_colliding_tiles(self):
-            # Bottom collision (landing)
-            if self.vel.y > 0:
+            if self.vel.y > 0:  # landing
                 self.pos.y = tile.rect.top - self.size.y
                 self.vel.y = 0
                 self.on_ground = True
                 self.jumping = False
-            # Top collision (hitting ceiling)
-            elif self.vel.y < 0:
+                if hasattr(tile, "is_moving_platform") and tile.is_moving_platform:
+                    landed_on_platform = tile
+            elif self.vel.y < 0:  # ceiling
                 self.pos.y = tile.rect.bottom
                 self.vel.y = 0
+
+        # Ride along with moving platform
+        if landed_on_platform:
+            dx, dy = landed_on_platform.delta
+            self.pos.x += dx
+            self.pos.y += dy  # optional; safe because we snapped to top already
+            self.on_moving_platform = landed_on_platform
+        else:
+            self.on_moving_platform = None
+
+        self.rect.y = self.pos.y  # keep in sync
                 
     def update_memories(self):
         # Check if any memories need to fade
@@ -171,9 +181,8 @@ class Player:
                     self.forget_memory(memory)
     
     def draw(self, screen):
-        # Draw the player
         sprite = self.update_animation()
-        screen.blit(sprite, self.rect)
-        
-        # For debugging, draw the collision box
-        # pygame.draw.rect(screen, RED, self.rect, 2)
+        offset = self.game.level.camera_offset
+        screen.blit(sprite, (self.rect.x + offset.x, self.rect.y + offset.y))
+        # Debug: uncomment to see hitbox aligned with sprite
+        # pygame.draw.rect(screen, RED, self.rect.move(offset.x, offset.y), 2)

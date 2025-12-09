@@ -23,17 +23,13 @@ class Door(pygame.sprite.Sprite):
         self.open_img = pygame.transform.scale(self.open_img, (width, height))
         
     def update(self, player):
-        # Check if player has the required memory and is near the door
         if not self.is_open and not self.opening:
-            near_door = abs(player.rect.centerx - self.rect.centerx) < 100 and abs(player.rect.centery - self.rect.centery) < 100
-            
-            if near_door and player.interacting:
+            interact_zone = self.rect.inflate(60, 60)
+            if interact_zone.colliderect(player.rect) and player.interacting:
                 if self.required_memory is None or player.has_memory(self.required_memory):
                     self.opening = True
                     self.opening_time = pygame.time.get_ticks()
                     player.game.sounds['door_open'].play()
-        
-        # Update door opening animation
         if self.opening and not self.is_open:
             if pygame.time.get_ticks() - self.opening_time > self.open_duration:
                 self.is_open = True
@@ -59,14 +55,10 @@ class Lever(pygame.sprite.Sprite):
         self.on_img = pygame.transform.scale(self.on_img, (40, 40))
         
     def update(self, player):
-        # Check if player is interacting with the lever
-        near_lever = abs(player.rect.centerx - self.rect.centerx) < 50 and abs(player.rect.centery - self.rect.centery) < 50
-        
-        if near_lever and player.interacting and not self.activated:
+        interact_zone = self.rect.inflate(40, 40)
+        if interact_zone.colliderect(player.rect) and player.interacting and not self.activated:
             self.activated = True
             player.game.sounds['switch'].play()
-            
-            # Find target object and perform action
             for platform in player.game.level.platforms:
                 if platform.id == self.target_id:
                     if self.action == "activate":
@@ -98,15 +90,11 @@ class Switch(pygame.sprite.Sprite):
         self.on_img = pygame.transform.scale(self.on_img, (40, 40))
         
     def update(self, player):
-        # Check if player is interacting with the switch and has required memory
-        near_switch = abs(player.rect.centerx - self.rect.centerx) < 50 and abs(player.rect.centery - self.rect.centery) < 50
-        
-        if near_switch and player.interacting and not self.activated:
-            if player.has_memory(self.required_memory):
+        interact_zone = self.rect.inflate(40, 40)
+        if interact_zone.colliderect(player.rect) and player.interacting and not self.activated:
+            if self.required_memory is None or player.has_memory(self.required_memory):
                 self.activated = True
                 player.game.sounds['switch'].play()
-                
-                # Find target object and perform action
                 for platform in player.game.level.platforms:
                     if platform.id == self.target_id:
                         if self.action == "activate":
@@ -132,13 +120,17 @@ class MovingPlatform(pygame.sprite.Sprite):
         self.speed = speed
         self.progress = 0
         self.forward = True
-        self.active = False
+        self.active = False  # set true via lever/switch or JSON
+        self.is_moving_platform = True
+        self.prev_rect = self.rect.copy()
+        self.delta = (0, 0)
         
         # Load image
         self.image = pygame.image.load("assets/objects/platform.png")
         self.image = pygame.transform.scale(self.image, (width, height))
         
     def update(self):
+        self.prev_rect = self.rect.copy()
         if self.active:
             # Update platform position
             if self.forward:
@@ -159,6 +151,9 @@ class MovingPlatform(pygame.sprite.Sprite):
             # Update rect position
             self.rect.x = current_x
             self.rect.y = current_y
+
+        # movement delta this frame
+        self.delta = (self.rect.x - self.prev_rect.x, self.rect.y - self.prev_rect.y)
     
     def draw(self, screen, offset):
         screen.blit(self.image, (self.rect.x + offset.x, self.rect.y + offset.y))

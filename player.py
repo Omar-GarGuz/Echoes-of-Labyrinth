@@ -11,12 +11,16 @@ class Player:
         self.size = pygame.math.Vector2(PLAYER_SIZE)
         self.rect = pygame.Rect(self.pos.x, self.pos.y, self.size.x, self.size.y)
         
+        # Store spawn point for respawning
+        self.spawn_point = pygame.math.Vector2(start_pos)
+        
         # Player states
         self.facing_right = True
         self.jumping = False
         self.on_ground = False
         self.interacting = False
         self.on_moving_platform = None
+        self.is_dead = False
         
         # Animation properties
         self.current_sprite = 0
@@ -91,7 +95,41 @@ class Player:
             
         return sprite
     
+    def check_death(self):
+        """Check if player has fallen out of bounds"""
+        # Define death zone (below the level)
+        death_y = 800  # Adjust based on your level height
+        
+        if self.pos.y > death_y:
+            self.die()
+    
+    def die(self):
+        """Handle player death"""
+        if not self.is_dead:
+            self.is_dead = True
+            # Play death sound if you have one
+            # self.game.sounds['death'].play()
+            
+            # Respawn after a short delay
+            pygame.time.set_timer(pygame.USEREVENT + 1, 1000)  # 1 second delay
+    
+    def respawn(self):
+        """Respawn player at spawn point"""
+        self.pos = pygame.math.Vector2(self.spawn_point)
+        self.vel = pygame.math.Vector2(0, 0)
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.y
+        self.is_dead = False
+        self.on_ground = False
+        self.jumping = False
+        
+        # Optional: clear memories on death
+        # self.memories.clear()
+    
     def update(self):
+        if self.is_dead:
+            return  # Don't update if dead
+        
         keys = pygame.key.get_pressed()
 
         # Horizontal movement
@@ -112,14 +150,14 @@ class Player:
         # Apply gravity
         self.vel.y += PLAYER_GRAVITY
 
-       # --- horizontal step ---
+        # --- horizontal step ---
         self.pos.x += self.vel.x
-        self.rect.x = self.pos.x  # sync before collision
+        self.rect.x = self.pos.x
         self.check_horizontal_collisions()
 
         # --- vertical step ---
         self.pos.y += self.vel.y
-        self.rect.y = self.pos.y  # sync before collision
+        self.rect.y = self.pos.y
         self.check_vertical_collisions()
 
         # Final rect sync
@@ -130,6 +168,9 @@ class Player:
         if not self.on_ground:
             self.state = "jump" if self.vel.y < 0 else "fall"
 
+        # Check for death
+        self.check_death()
+        
         # Update memory timers
         self.update_memories()
 

@@ -1,6 +1,6 @@
 # Game settings
 WIDTH = 1280
-HEIGHT = 720
+HEIGHT = 705
 FPS = 60
 TITLE = "Echoes of the Labyrinth"
 

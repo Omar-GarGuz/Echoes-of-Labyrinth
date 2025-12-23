@@ -30,5 +30,6 @@ MEMORY_TYPES = {
     'red': {'color': RED, 'duration': None},  # Permanent
     'blue': {'color': BLUE, 'duration': 10000},  # 10 seconds
     'green': {'color': GREEN, 'duration': 20000},  # 20 seconds
-    'purple': {'color': PURPLE, 'duration': 15000}  # 15 seconds
+    'purple': {'color': PURPLE, 'duration': 15000},  # 15 seconds
+    'yellow': {'color': YELLOW, 'duration': 30000}
 }

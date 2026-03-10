@@ -1,60 +1,58 @@
 import pygame
+import math
 from settings import *
 
 class UI:
     def __init__(self, game):
         self.game = game
         self.font = pygame.font.Font(None, 32)
-        
-        # Load UI elements
-        self.memory_icon = pygame.image.load("assets/ui/memory_icon.png")
-        self.memory_icon = pygame.transform.scale(self.memory_icon, (30, 30))
-        
+
+        # cassette img 4 the inventory bar
+        raw = pygame.image.load("assets/ui/memory_icon.png").convert_alpha()
+        self.cassette = pygame.transform.scale(raw, (36, 36))
     def update(self):
         pass
         
     def draw(self):
-        # Draw memory orbs collected
+        # show cassettes in the hud
         self.draw_memory_status()
         
     def draw_memory_status(self):
-        # Draw memory orb indicators
+        # show collected cassettes in the top left
         if self.game.player and self.game.player.memories:
-            memory_display_width = 40
-            memory_display_height = 40
-            memory_spacing = 10
-            start_x = 20
-            start_y = 20
-            
+            orb_r = 22          # circle radius
+            spacing = 14
+            start_x = orb_r + 10
+            start_y = orb_r + 10
+
             for i, memory in enumerate(self.game.player.memories):
-                # Calculate position
-                pos_x = start_x + i * (memory_display_width + memory_spacing)
-                pos_y = start_y
-                
-                # Draw memory background
-                pygame.draw.circle(
-                    self.game.screen, 
-                    memory.color, 
-                    (pos_x + memory_display_width // 2, pos_y + memory_display_height // 2), 
-                    memory_display_width // 2
-                )
-                
-                # Draw memory icon
-                self.game.screen.blit(
-                    self.memory_icon, 
-                    (pos_x + 5, pos_y + 5)
-                )
-                
-                # If memory is fading, show fade effect
+                cx = start_x + i * (orb_r * 2 + spacing)
+                cy = start_y
+                color = memory.color
+
+                # glow ring behind everything
+                glow_size = orb_r + 8
+                glow_surf = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+                for r in range(glow_size, orb_r - 1, -1):
+                    alpha = max(0, min(120, int(120 * (glow_size - r) / 8)))
+                    pygame.draw.circle(glow_surf, (*color, alpha),
+                                       (glow_size, glow_size), r)
+                self.game.screen.blit(glow_surf, (cx - glow_size, cy - glow_size))
+
+                # colored circle
+                dark = tuple(max(0, c - 55) for c in color)
+                pygame.draw.circle(self.game.screen, dark, (cx, cy), orb_r)
+                pygame.draw.circle(self.game.screen, color, (cx, cy), orb_r - 2)
+
+                # cassette on top
+                cw, ch = self.cassette.get_size()
+                self.game.screen.blit(self.cassette, (cx - cw // 2, cy - ch // 2))
+
+                # cover it up as it fades out
                 if memory.is_fading:
-                    fade_progress = (pygame.time.get_ticks() - memory.fade_start_time) / 2000  # 2 second fade
-                    fade_alpha = int(255 * (1 - fade_progress))
-                    fade_alpha = max(0, min(255, fade_alpha))  # clamp
-                    
-                    fade_surf = pygame.Surface((memory_display_width, memory_display_height), pygame.SRCALPHA)
-                    fade_surf.fill((255, 255, 255, fade_alpha))
-                    
-                    self.game.screen.blit(
-                        fade_surf, 
-                        (pos_x, pos_y)
-                    )
+                    fade_progress = (pygame.time.get_ticks() - memory.fade_start_time) / 2000
+                    fade_alpha = max(0, min(180, int(180 * (1 - fade_progress))))
+                    fade_surf = pygame.Surface((orb_r * 2, orb_r * 2), pygame.SRCALPHA)
+                    pygame.draw.circle(fade_surf, (20, 20, 40, fade_alpha),
+                                       (orb_r, orb_r), orb_r)
+                    self.game.screen.blit(fade_surf, (cx - orb_r, cy - orb_r))

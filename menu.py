@@ -8,12 +8,12 @@ class Button:
         self.action = action
         self.hovered = False
         
-        # Colors
+        # button colors
         self.bg_color = GRAY
         self.hover_color = (150, 150, 150)
         self.text_color = WHITE
         
-        # Font
+        # font 4 button text
         self.font = pygame.font.Font(None, 36)
         
     def update(self, mouse_pos):
@@ -34,7 +34,7 @@ class Menu:
     def __init__(self, game):
         self.game = game
         
-        # Create buttons
+        # build the 3 main menu buttons
         button_width = 200
         button_height = 60
         button_x = WIDTH // 2 - button_width // 2
@@ -45,12 +45,12 @@ class Menu:
             Button(button_x, 460, button_width, button_height, "Quit", self.quit_game)
         ]
         
-        # Title text
+        # big title at the top
         self.title_font = pygame.font.Font(None, 72)
         self.title_text = self.title_font.render("Echoes of the Labyrinth", True, WHITE)
         self.title_rect = self.title_text.get_rect(center=(WIDTH // 2, 150))
         
-        # Controls screen
+        # controls screen stuff
         self.showing_controls = False
         self.controls_font = pygame.font.Font(None, 32)
         self.controls_text = [
@@ -82,28 +82,28 @@ class Menu:
                 button.update(mouse_pos)
         
     def draw(self):
-        # Draw menu background
+        # clear the screen first
         self.game.screen.fill(BG_COLOR)
         
         if self.showing_controls:
             self.draw_controls()
         else:
-            # Draw title
+            # title
             self.game.screen.blit(self.title_text, self.title_rect)
             
-            # Draw buttons
+            # buttons
             for button in self.buttons:
                 button.draw(self.game.screen)
     
     def draw_controls(self):
-        # Draw controls text
+        # show the controls list
         for i, line in enumerate(self.controls_text):
             text_surf = self.controls_font.render(line, True, WHITE)
             text_rect = text_surf.get_rect(center=(WIDTH // 2, 150 + i * 40))
             self.game.screen.blit(text_surf, text_rect)
     
     def start_game(self):
-        self.game.start_level(1)
+        self.game.show_story()
     
     def show_controls(self):
         self.showing_controls = True

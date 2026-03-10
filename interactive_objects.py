@@ -11,12 +11,12 @@ class Door(pygame.sprite.Sprite):
         self.target_y = target_y
         self.is_open = False
         
-        # Animation properties
+        # door opening state
         self.opening = False
         self.opening_time = 0
-        self.open_duration = 1000  # milliseconds
+        self.open_duration = 1000  # ms
         
-        # Load images
+        # load the door sprites
         self.closed_img = pygame.image.load("assets/objects/door_closed.png")
         self.open_img = pygame.image.load("assets/objects/door_open.png")
         self.closed_img = pygame.transform.scale(self.closed_img, (width, height))
@@ -48,7 +48,7 @@ class Lever(pygame.sprite.Sprite):
         self.action = action
         self.activated = False
         
-        # Load images
+        # load lever sprites
         self.off_img = pygame.image.load("assets/objects/lever_off.png")
         self.on_img = pygame.image.load("assets/objects/lever_on.png")
         self.off_img = pygame.transform.scale(self.off_img, (40, 40))
@@ -83,7 +83,7 @@ class Switch(pygame.sprite.Sprite):
         self.action = action
         self.activated = False
         
-        # Load images
+        # load switch sprites
         self.off_img = pygame.image.load("assets/objects/switch_off.png")
         self.on_img = pygame.image.load("assets/objects/switch_on.png")
         self.off_img = pygame.transform.scale(self.off_img, (40, 40))
@@ -125,7 +125,7 @@ class MovingPlatform(pygame.sprite.Sprite):
         self.prev_rect = self.rect.copy()
         self.delta = (0, 0)
         
-        # Load image
+        # load the platform sprite
         self.image = pygame.image.load("assets/objects/platform.png")
         self.image = pygame.transform.scale(self.image, (width, height))
         

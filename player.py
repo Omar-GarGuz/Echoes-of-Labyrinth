@@ -5,16 +5,16 @@ class Player:
     def __init__(self, game, start_pos):
         self.game = game
         
-        # Player position and movement
+        # position and velocity
         self.pos = pygame.math.Vector2(start_pos)
         self.vel = pygame.math.Vector2(0, 0)
         self.size = pygame.math.Vector2(PLAYER_SIZE)
         self.rect = pygame.Rect(self.pos.x, self.pos.y, self.size.x, self.size.y)
         
-        # Store spawn point for respawning
+        # remember where we started 4 respawn
         self.spawn_point = pygame.math.Vector2(start_pos)
         
-        # Player states
+        # flags 4 what the player is doing
         self.facing_right = True
         self.jumping = False
         self.on_ground = False
@@ -22,27 +22,27 @@ class Player:
         self.on_moving_platform = None
         self.is_dead = False
         
-        # Animation properties
+        # animation stuff
         self.current_sprite = 0
-        self.animation_speed = 0.15
+        self.animation_speed = 0.05
         self.state = "idle"  # idle, walk, jump, fall
         
-        # Load sprites
+        # bring in all the sprites
         self.load_sprites()
         
-        # Memory collection
+        # memories the player has collected
         self.memories = []
         
     def load_sprites(self):
-        # Load all player animations
+        # load every animation from disk
         self.animations = {
             "idle": [pygame.image.load(f"assets/player/idle/{i}.png") for i in range(4)],
             "walk": [pygame.image.load(f"assets/player/walk/{i}.png") for i in range(6)],
-            "jump": [pygame.image.load(f"assets/player/jump/{i}.png") for i in range(3)],
+            "jump": [pygame.image.load(f"assets/player/jump/{i}.png") for i in range(2)],
             "fall": [pygame.image.load(f"assets/player/fall/{i}.png") for i in range(2)]
         }
         
-        # Scale all sprites
+        # resize all of them 2 match player size
         for action in self.animations:
             for i, sprite in enumerate(self.animations[action]):
                 self.animations[action][i] = pygame.transform.scale(sprite, (int(self.size.x), int(self.size.y)))
@@ -81,7 +81,7 @@ class Player:
             self.game.sounds['memory_fade'].play()
             
     def update_animation(self):
-        # Update animation based on current state
+        # pick the right frame 4 the current state
         self.current_sprite += self.animation_speed
         
         if self.current_sprite >= len(self.animations[self.state]):
@@ -89,32 +89,30 @@ class Player:
             
         sprite = self.animations[self.state][int(self.current_sprite)]
         
-        # Flip sprite if facing left
+        # flip it if going left
         if not self.facing_right:
             sprite = pygame.transform.flip(sprite, True, False)
             
         return sprite
     
     def check_death(self):
-        """Check if player has fallen out of bounds"""
-        # Define death zone (below the level)
-        death_y = 800  # Adjust based on your level height
+        # if u fall below this y value, u die
+        death_y = 800  # change this if the level is taller
         
         if self.pos.y > death_y:
             self.die()
     
     def die(self):
-        """Handle player death"""
         if not self.is_dead:
             self.is_dead = True
-            # Play death sound if you have one
+            # TODO: add a death sound lol
             # self.game.sounds['death'].play()
             
-            # Respawn after a short delay
-            pygame.time.set_timer(pygame.USEREVENT + 1, 1000)  # 1 second delay
+            # wait a sec then respawn
+            pygame.time.set_timer(pygame.USEREVENT + 1, 1000)  # 1000ms = 1 second
     
     def respawn(self):
-        """Respawn player at spawn point"""
+        pygame.time.set_timer(pygame.USEREVENT + 1, 0)  # stop the timer, dont want it firing again
         self.pos = pygame.math.Vector2(self.spawn_point)
         self.vel = pygame.math.Vector2(0, 0)
         self.rect.x = self.pos.x
@@ -123,16 +121,16 @@ class Player:
         self.on_ground = False
         self.jumping = False
         
-        # Optional: clear memories on death
-        # self.memories.clear()
+        # optional: lose ur memories on death - uncomment 2 enable
+        #self.memories.clear()
     
     def update(self):
         if self.is_dead:
-            return  # Don't update if dead
+            return  # skip everything when dead
         
         keys = pygame.key.get_pressed()
 
-        # Horizontal movement
+        # left and right movement
         self.vel.x = 0
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.vel.x = -PLAYER_SPEED
@@ -147,31 +145,31 @@ class Player:
         elif self.on_ground:
             self.state = "idle"
 
-        # Apply gravity
+        # pull down every frame
         self.vel.y += PLAYER_GRAVITY
 
-        # --- horizontal step ---
+        # step 1: move horizontal
         self.pos.x += self.vel.x
         self.rect.x = self.pos.x
         self.check_horizontal_collisions()
 
-        # --- vertical step ---
+        # step 2: move vertical
         self.pos.y += self.vel.y
         self.rect.y = self.pos.y
         self.check_vertical_collisions()
 
-        # Final rect sync
+        # sync rect 2 pos
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
 
-        # Update animation states
+        # update animation based on velocity
         if not self.on_ground:
             self.state = "jump" if self.vel.y < 0 else "fall"
 
-        # Check for death
+        # fell 2 far?
         self.check_death()
         
-        # Update memory timers
+        # tick the memory timers
         self.update_memories()
 
     def check_horizontal_collisions(self):
@@ -186,17 +184,17 @@ class Player:
         self.on_ground = False
         landed_on_platform = None
         
-        # Store previous bottom position for one-way platform check
+        # need prev bottom 4 one-way platform check
         prev_bottom = self.rect.bottom - self.vel.y
 
         for tile in self.game.level.get_colliding_tiles(self):
-            # Check if it's a one-way platform
+            # is this a platform u can jump thru from below?
             is_one_way = hasattr(tile, 'one_way') and tile.one_way
             
-            if self.vel.y > 0:  # landing
-                # For one-way platforms, only collide if coming from above
+            if self.vel.y > 0:  # falling / landing
+                # one-way: only land if coming from above
                 if is_one_way:
-                    if prev_bottom <= tile.rect.top + 5:  # Add small tolerance
+                    if prev_bottom <= tile.rect.top + 5:  # lil tolerance
                         self.pos.y = tile.rect.top - self.size.y
                         self.vel.y = 0
                         self.on_ground = True
@@ -204,8 +202,8 @@ class Player:
                         if hasattr(tile, "is_moving_platform") and tile.is_moving_platform:
                             landed_on_platform = tile
                 else:
-                    # Solid platform - always collide when landing
-                    # Only snap if we're close to the top (prevents teleporting from inside)
+                    # solid tile - always lands
+                    # the rect.bottom check prevents teleporting thru walls
                     if self.rect.bottom <= tile.rect.top + abs(self.vel.y) + 5:
                         self.pos.y = tile.rect.top - self.size.y
                         self.vel.y = 0
@@ -213,11 +211,11 @@ class Player:
                         self.jumping = False
                         if hasattr(tile, "is_moving_platform") and tile.is_moving_platform:
                             landed_on_platform = tile
-            elif self.vel.y < 0 and not is_one_way:  # ceiling (ignore for one-way)
+            elif self.vel.y < 0 and not is_one_way:  # hit the ceiling
                 self.pos.y = tile.rect.bottom
                 self.vel.y = 0
 
-        # Ride along with moving platform
+        # stick 2 the moving platform
         if landed_on_platform:
             dx, dy = landed_on_platform.delta
             self.pos.x += dx
@@ -226,23 +224,23 @@ class Player:
         else:
             self.on_moving_platform = None
 
-        self.rect.y = int(self.pos.y)  # Add int() cast
+        self.rect.y = int(self.pos.y)  # int cast fixes subpixel jitter
                 
     def update_memories(self):
-        # Check if any memories need to fade
-        for memory in self.memories[:]:  # Copy list to safely modify during iteration
+        # check each memory - copy the list so we can remove while looping
+        for memory in self.memories[:]:
             if memory.duration and pygame.time.get_ticks() - memory.collected_time > memory.duration:
                 if not memory.is_fading:
                     memory.is_fading = True
                     memory.fade_start_time = pygame.time.get_ticks()
                 
-                # Check if fade is complete
-                if pygame.time.get_ticks() - memory.fade_start_time > 2000:  # 2 second fade
+                # 2 seconds 2 fully fade, then remove it
+                if pygame.time.get_ticks() - memory.fade_start_time > 2000:
                     self.forget_memory(memory)
     
     def draw(self, screen):
         sprite = self.update_animation()
         offset = self.game.level.camera_offset
         screen.blit(sprite, (self.rect.x + offset.x, self.rect.y + offset.y))
-        # Debug: uncomment to see hitbox aligned with sprite
+        # debug: uncomment 2 see the hitbox
         # pygame.draw.rect(screen, RED, self.rect.move(offset.x, offset.y), 2)

@@ -205,6 +205,9 @@
       ],
       "moving_platforms": [
         {"x": 190, "y": 450, "width": 128, "height": 32, "move_x": 510, "move_y": 0, "speed": 0.015, "id": "platform4"}
+      ],
+      "signs": [
+        {"x": 800, "y": 550, "width": 210, "height": 50, "image": "objects/sign.png"}
       ]
     }
   }

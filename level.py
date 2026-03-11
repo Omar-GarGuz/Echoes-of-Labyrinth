@@ -4,6 +4,7 @@ import os
 from settings import *
 from memory_orb import MemoryOrb
 from interactive_objects import Door, Lever, Switch, MovingPlatform
+from ghost import Ghost
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, tile_type):
@@ -31,6 +32,9 @@ class Level:
 
         # signs are just images, not sprites
         self.signs = []
+
+        # enemies
+        self.enemies = pygame.sprite.Group()
         
         # track which room we're in
         self.current_room = "start"
@@ -65,6 +69,7 @@ class Level:
         self.levers.empty()
         self.switches.empty()
         self.platforms.empty()
+        self.enemies.empty()
         self.signs = []
         
         # grab this room's data from the dict
@@ -146,6 +151,17 @@ class Level:
             platform.active = platform_data.get("active", False)  # can start active if json says so
             self.platforms.add(platform)
             
+        # spawn enemies
+        for enemy_data in room_data.get("enemies", []):
+            ghost = Ghost(
+                enemy_data["x"],
+                enemy_data["y"],
+                enemy_data["patrol_left"],
+                enemy_data["patrol_right"],
+                enemy_data.get("speed", 2)
+            )
+            self.enemies.add(ghost)
+
         # load sign images (just load + store, no logic)
         for sign_data in room_data.get("signs", []):
             img = pygame.image.load(f"assets/{sign_data['image']}")
@@ -177,6 +193,7 @@ class Level:
         self.levers.update(player)
         self.switches.update(player)
         self.platforms.update()
+        self.enemies.update()
         
         # did player walk into a cassette?
         for orb in list(self.memory_orbs):
@@ -185,6 +202,13 @@ class Level:
                 orb.collect()
                 self.memory_orbs.remove(orb)
                 
+        # did player touch a ghost?
+        if not player.is_dead:
+            for enemy in self.enemies:
+                if player.rect.colliderect(enemy.rect):
+                    player.die()
+                    break
+
         # did player go thru a door?
         for door in list(self.doors):
             if door.is_open and player.rect.colliderect(door.rect):
@@ -241,6 +265,10 @@ class Level:
             
         for platform in self.platforms:
             platform.draw(screen, self.camera_offset)
+
+        # enemies
+        for enemy in self.enemies:
+            enemy.draw(screen, self.camera_offset)
 
         # signs on top of everything
         for sign in self.signs:

@@ -18,10 +18,11 @@
 ### 🎮 Core Concept
 
 In a world where memories hold physical power, you must: 
-- Collect colored Memory Orbs scattered throughout each level
+- Collect colored Memory Orbs (cassettes) scattered throughout each level
 - Use memories to unlock doors and interact with the environment
 - Race against time before temporary memories fade away
 - Solve puzzles using levers, switches, and moving platforms
+- Avoid ghost enemies that patrol the rooms and send you back to the start
 
 ---
 
@@ -37,6 +38,10 @@ In a world where memories hold physical power, you must:
   | Yellow | 🟡 |
 
 - **Interactive Objects** — Doors, levers, switches, and moving platforms
+- **Enemy System** — Ghost enemies that patrol horizontally and trigger player death on contact
+- **Death & Respawn** — Player respawns at the room's start point after dying (falling or touching an enemy)
+- **Story Screen** — Intro screen displayed before the level begins
+- **Environmental Signs** — Image-based signs placed throughout rooms for storytelling hints
 - **Room-Based Levels** — Multiple interconnected rooms/puzzles per level
 - **Smooth Platforming** — Responsive controls with moving platform support
 - **Atmospheric Audio** — Background music and sound effects for each level
@@ -94,12 +99,13 @@ In a world where memories hold physical power, you must:
 ```
 Echoes-of-Labyrinth/
 ├── main.py                 # Game entry point and main loop
-├── player.py               # Player class with movement and collision
-├── level.py                # Level loading and room management
+├── player.py               # Player class with movement, collision, and death/respawn
+├── level.py                # Level loading, room management, and enemy handling
 ├── interactive_objects.py  # Doors, levers, switches, platforms
-├── memory_orb.py           # Memory orb collectibles
+├── memory_orb.py           # Memory orb (cassette) collectibles
+├── ghost.py                # Ghost enemy with horizontal patrol AI
 ├── menu.py                 # Main menu and UI buttons
-├── ui. py                   # In-game UI (memory display)
+├── ui.py                   # In-game UI (memory/cassette display)
 ├── settings.py             # Game constants and configuration
 └── assets/
     ├── levels/             # Level data (JSON format)
@@ -107,8 +113,10 @@ Echoes-of-Labyrinth/
     ├── sounds/             # Sound effects
     ├── player/             # Player sprite animations
     ├── tiles/              # Tileset images
-    ├── objects/            # Interactive object sprites
-    └── ui/                 # UI elements
+    ├── objects/            # Interactive object sprites (doors, levers, signs)
+    ├── enemies/            # Enemy sprite sheets
+    │   └── enemy_ghost/    # Ghost enemy frames (horizontal/, down/, up/)
+    └── ui/                 # UI elements (cassette icon, etc.)
 ```
 
 ---
@@ -156,14 +164,25 @@ Levels are defined in JSON format in the `assets/levels/` directory.
       "memory_orbs": [
         { "x":  200, "y": 300, "memory_type": "blue" }
       ],
-      "doors":  [
+      "doors": [
         {
-          "x":  500, "y": 400,
+          "x": 500, "y": 400,
           "width": 64, "height": 128,
           "required_memory": "blue",
           "target_room": "room2",
           "target_x": 100, "target_y": 500
         }
+      ],
+      "enemies": [
+        {
+          "x": 600, "y": 530,
+          "patrol_left": 400,
+          "patrol_right": 900,
+          "speed": 2
+        }
+      ],
+      "signs": [
+        { "x": 800, "y": 550, "width": 210, "height": 50, "image": "objects/sign.png" }
       ]
     }
   }
@@ -182,6 +201,13 @@ Place sprite frames in `assets/player/<animation>/`:
 - `jump/` — 3 frames default
 - `fall/` — 2 frames default
 
+### Enemy Sprites
+
+Place ghost frames in `assets/enemies/enemy_ghost/horizontal/`:
+- `0.png`, `1.png` — two-frame walk cycle (scaled to 50×60 px)
+
+Additional subdirectories (`down/`, `up/`) are reserved for future movement directions.
+
 ### Sound Effects
 
 Add `.wav` files to `assets/sounds/`:
@@ -189,7 +215,7 @@ Add `.wav` files to `assets/sounds/`:
 - `collect.wav`
 - `door_open.wav`
 - `memory_fade.wav`
-- `switch. wav`
+- `switch.wav`
 
 ### Music
 
@@ -214,10 +240,12 @@ pygame.draw.rect(screen, RED, self.rect.move(offset.x, offset.y), 2)
 
 | Class | File | Description |
 |-------|------|-------------|
-| `Game` | main.py | Main game loop and state management |
-| `Player` | player.py | Player movement, collision, memory collection |
-| `Level` | level.py | Room loading and tile management |
-| `MemoryOrb` | memory_orb.py | Collectible orbs with duration tracking |
-| `Door` | interactive_objects.py | Memory-locked doors with animations |
-| `Lever` | interactive_objects.py | Toggle switches for platforms |
-| `MovingPlatform` | interactive_objects. py | Moving platforms with waypoints |
+| `Game` | main.py | Main game loop, state management, and story screen |
+| `Player` | player.py | Movement, collision, memory collection, death/respawn |
+| `Level` | level.py | Room loading, tile management, enemy spawning, and collision logic |
+| `Ghost` | ghost.py | Patrol-based horizontal enemy with 2-frame animation |
+| `MemoryOrb` | memory_orb.py | Collectible cassettes with per-type durations |
+| `Door` | interactive_objects.py | Memory-locked doors with open animation |
+| `Lever` | interactive_objects.py | Toggle switches for moving platforms |
+| `Switch` | interactive_objects.py | Memory-gated switches for activating platforms |
+| `MovingPlatform` | interactive_objects.py | Moving platforms with waypoints |

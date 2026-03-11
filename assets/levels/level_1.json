@@ -104,6 +104,9 @@
       ],
       "moving_platforms": [
         {"x": 450, "y": 370, "width": 128, "height": 32, "move_x": 200, "move_y": 0, "speed": 0.01, "id": "platform2"}
+      ],
+      "enemies": [
+        {"x": 600, "y": 530, "patrol_left": 400, "patrol_right": 900, "speed": 2}
       ]
     },
     "puzzle2": {
